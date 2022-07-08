@@ -19,6 +19,7 @@ import phoenixit.education.services.specifications.SearchCriteria;
 import phoenixit.education.repositories.MailInfoRepository;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,11 +73,11 @@ public class MailInfoService {
         // фильтрация по полям звонков
         if (filters.getCallFilters() != null && !filters.getCallFilters().isEmpty()) {
             List<PhoneCall> calls = phoneCallInfoService.findByFilters(filters.getCallFilters());
+            if (calls.isEmpty())
+                return new ArrayList<>();
 
-//            if (calls != null) {
-                List<Integer> callsId = calls.stream().map(PhoneCall::getMessageId).collect(Collectors.toList());
-                spec = spec.and(new MailInfoWithCallsSpecification(callsId));
-//            }
+            List<Integer> callsId = calls.stream().map(PhoneCall::getMessageId).collect(Collectors.toList());
+            spec = spec.and(new MailInfoWithCallsSpecification(callsId));
         }
 
         // фильтрация по полям письма
@@ -100,7 +101,7 @@ public class MailInfoService {
                 }
                 catch (ParseException e) {
                     log.error("Error parse start date: " + startDateFilter.getValue(), e);
-                    return null;
+                    return new ArrayList<>();
                 }
             }
 
@@ -114,7 +115,7 @@ public class MailInfoService {
                 }
                 catch (ParseException e) {
                     log.error("Error parse end date: " + endDateFilter.getValue(), e);
-                    return null;
+                    return new ArrayList<>();
                 }
             }
         }

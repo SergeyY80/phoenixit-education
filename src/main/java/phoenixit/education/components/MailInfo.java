@@ -73,7 +73,7 @@ public class MailInfo {
     /**
      * Дозвоны совершённые по данному сообщению
      */
-    @OneToMany(mappedBy = "mailInfo", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "mailInfo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<PhoneCall> calls = new ArrayList<>();
 
     public void addPhoneCall(PhoneCall phoneCall) {
