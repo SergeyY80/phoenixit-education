@@ -12,6 +12,7 @@ import phoenixit.education.components.PhoneCall;
 import phoenixit.education.controllers.Filter;
 import phoenixit.education.controllers.Filters;
 import phoenixit.education.exceptions.MailHandleException;
+import phoenixit.education.repositories.PhoneCallRepository;
 import phoenixit.education.util.TimeUtil;
 import phoenixit.education.services.specifications.MailInfoSpecification;
 import phoenixit.education.services.specifications.MailInfoWithCallsSpecification;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class MailInfoService {
 
     private final MailInfoRepository mailInfoRepository;
+    private final PhoneCallRepository phoneCallRepository;
     private final PhoneCallInfoService phoneCallInfoService;
 
     private final String startDateFieldName = "startDate";
@@ -41,18 +43,30 @@ public class MailInfoService {
     public List<MailInfo> saveMails(List<MailInfo> mails) throws MailHandleException {
         mails.forEach(x -> x.setId(null));
         checkMailsDate(mails, "Emails not saved cause some has a future date");
-        return mailInfoRepository.saveAll(mails);
+        return saveMailList(mails);
     }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
     public List<MailInfo> updateMails(List<MailInfo> mails) throws MailHandleException {
         checkMailsDate(mails, "Emails not updated cause some has a future date");
-        return mailInfoRepository.saveAll(mails);
+        return saveMailList(mails);
+    }
+
+    private List<MailInfo> saveMailList(List<MailInfo> mails) {
+        mails = mailInfoRepository.saveAll(mails);
+
+        for (MailInfo mail : mails)
+            for (PhoneCall call : mail.getCalls()) {
+                call.setMessageId(mail.getId());
+                phoneCallRepository.updateMessageId(call.getId(), mail.getId());
+            }
+
+        return mails;
     }
 
     private void checkMailsDate(List<MailInfo> mails, String errMsg) throws MailHandleException {
         Date now = new Date();
-        List<MailInfo> errMails = mails.stream().filter(x -> x.getDate().after(now))
+        List<MailInfo> errMails = mails.stream().filter(x -> x.getDate() != null && x.getDate().after(now))
                 .collect(Collectors.toList());
 
         if (errMails.size() > 0)

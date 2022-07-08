@@ -24,8 +24,8 @@ import static javax.persistence.GenerationType.IDENTITY;
 public class MailInfo {
 
     @Id
-    @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id")
+    @GeneratedValue(strategy = IDENTITY)
     private Integer id;
 
     /**
@@ -75,12 +75,6 @@ public class MailInfo {
      */
     @OneToMany(mappedBy = "mailInfo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<PhoneCall> calls = new ArrayList<>();
-
-    public void addPhoneCall(PhoneCall phoneCall) {
-        phoneCall.setMailInfo(this);
-        phoneCall.setMessageId(id);
-        calls.add(phoneCall);
-    }
 
 
 }

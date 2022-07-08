@@ -27,8 +27,8 @@ public class MailInfoController {
     @PostMapping("/save_mails")
     public ResponseEntity<String> saveMails(@RequestBody List<MailInfo> mails) {
         try {
-            List<Integer> ids = mailInfoService.saveMails(mails).stream().map(MailInfo::getId)
-                    .collect(Collectors.toList());
+            mails = mailInfoService.saveMails(mails);
+            List<Integer> ids = mails.stream().map(MailInfo::getId).collect(Collectors.toList());
             return new ResponseEntity<>(objectMapper.writeValueAsString(ids), HttpStatus.OK);
         }
         catch (Throwable e) {
