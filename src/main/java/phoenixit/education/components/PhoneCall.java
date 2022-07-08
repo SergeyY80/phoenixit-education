@@ -7,7 +7,7 @@ import lombok.ToString;
 import phoenixit.education.models.CallInternalStatus;
 
 import javax.persistence.*;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 
 @Setter
@@ -32,7 +32,7 @@ public class PhoneCall {
     private String phone;
 
     @Column(name = "callDate")
-    private LocalDateTime callDate;
+    private Date callDate;
 
     @ManyToOne
     @JoinColumn(name = "messageId")

@@ -19,5 +19,6 @@ public class Filters implements Serializable {
     private String sortField;
     private Sort.Direction sortDir;
     private List<Filter> filters;
+    private List<Filter> callFilters;
 
 }

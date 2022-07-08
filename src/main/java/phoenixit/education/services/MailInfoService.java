@@ -18,7 +18,7 @@ import phoenixit.education.services.specifications.MailInfoWithCallsSpecificatio
 import phoenixit.education.services.specifications.SearchCriteria;
 import phoenixit.education.repositories.MailInfoRepository;
 
-import java.util.Arrays;
+import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,56 +32,90 @@ public class MailInfoService {
     private final MailInfoRepository mailInfoRepository;
     private final PhoneCallInfoService phoneCallInfoService;
 
+    private final String startDateFieldName = "startDate";
+    private final String endDateFieldName = "endDate";
+
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
-    public void saveMails(List<MailInfo> mails) throws MailHandleException {
+    public List<MailInfo> saveMails(List<MailInfo> mails) throws MailHandleException {
+        mails.forEach(x -> x.setId(null));
+        checkMailsDate(mails, "Emails not saved cause some has a future date");
+        return mailInfoRepository.saveAll(mails);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
+    public List<MailInfo> updateMails(List<MailInfo> mails) throws MailHandleException {
+        checkMailsDate(mails, "Emails not updated cause some has a future date");
+        return mailInfoRepository.saveAll(mails);
+    }
+
+    private void checkMailsDate(List<MailInfo> mails, String errMsg) throws MailHandleException {
         Date now = new Date();
         List<MailInfo> errMails = mails.stream().filter(x -> x.getDate().after(now))
                 .collect(Collectors.toList());
 
         if (errMails.size() > 0)
-            throw new MailHandleException("Emails were not saved cause some has a future date", mails);
-
-        mailInfoRepository.saveAll(mails);
+            throw new MailHandleException(errMsg, errMails);
     }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
-    public int deleteByFilters(Filters filters) {
+    public List<MailInfo> deleteByFilters(Filters filters) {
         List<MailInfo> mails = findByFilters(filters);
         mailInfoRepository.deleteAll(mails);
-        return mails.size();
+        return mails;
     }
 
     @Transactional(readOnly = true)
     public List<MailInfo> findByFilters(Filters filters) {
         Specification<MailInfo> spec = Specification.where(null);
 
-        // фильтрация по полям письма
-        if (filters.getFilters() != null) {
-            List<PhoneCall> calls = phoneCallInfoService.findByFilters(filters);
+        // фильтрация по полям звонков
+        if (filters.getCallFilters() != null && !filters.getCallFilters().isEmpty()) {
+            List<PhoneCall> calls = phoneCallInfoService.findByFilters(filters.getCallFilters());
 
-            if (calls != null) {
+//            if (calls != null) {
                 List<Integer> callsId = calls.stream().map(PhoneCall::getMessageId).collect(Collectors.toList());
                 spec = spec.and(new MailInfoWithCallsSpecification(callsId));
-            }
+//            }
+        }
 
+        // фильтрация по полям письма
+        if (filters.getFilters() != null) {
             var specifications = filters.getFilters().stream()
-                                        .map(x -> createSpecification(x.getName(), "=", x.getValue()))
-                                        .collect(Collectors.toList());
+                    .filter(x -> !startDateFieldName.equals(x.getName()) && !endDateFieldName.equals(x.getName()))
+                    .map(x -> createSpecification(x.getName(), "=", x.getValue()))
+                    .collect(Collectors.toList());
 
             for (MailInfoSpecification specification : specifications)
                 spec = spec.and(specification);
 
             // фильтрация по дате письма
-            Filter dateRange = filters.getFilters().stream().filter(x -> "dateRange".equals(x.getName()))
+            Filter startDateFilter = filters.getFilters().stream().filter(x -> startDateFieldName.equals(x.getName()))
                                       .findFirst().orElse(null);
-            if (dateRange != null) {
-                List<Date> dates = getDatesFromStr(dateRange.getValue());
 
-                if (dates.get(0) != null)
-                    spec = spec.and(createSpecification(MailInfo.dateField, ">=", dates.get(0)));
-                if (dates.get(1) != null)
-                    spec = spec.and(createSpecification(MailInfo.dateField, "<=", dates.get(1)));
+            if (startDateFilter != null) {
+                try {
+                    Date startDate = TimeUtil.DateFromStr(startDateFilter.getValue());
+                    spec = spec.and(createSpecification(MailInfo.dateField, ">=", startDate));
+                }
+                catch (ParseException e) {
+                    log.error("Error parse start date: " + startDateFilter.getValue(), e);
+                    return null;
+                }
+            }
+
+            Filter endDateFilter = filters.getFilters().stream().filter(x -> endDateFieldName.equals(x.getName()))
+                    .findFirst().orElse(null);
+
+            if (endDateFilter != null) {
+                try {
+                    Date endDate = TimeUtil.DateFromStr(endDateFilter.getValue());
+                    spec = spec.and(createSpecification(MailInfo.dateField, "<=", endDate));
+                }
+                catch (ParseException e) {
+                    log.error("Error parse end date: " + endDateFilter.getValue(), e);
+                    return null;
+                }
             }
         }
 
@@ -98,32 +132,6 @@ public class MailInfoService {
     private MailInfoSpecification createSpecification(String key, String operation, Object value) {
         SearchCriteria criteria = new SearchCriteria(key, operation, value);
         return new MailInfoSpecification(criteria);
-    }
-
-    private List<Date> getDatesFromStr(String s) {
-        Date startDate = null;
-        Date endDate = null;
-        String[] dates = s.split(" ÷ ");
-
-        if (!dates[0].trim().equals("_")) {
-            try {
-                startDate = TimeUtil.DateFromStr(dates[0]);
-            }
-            catch (Exception ex) {
-                log.error("Error parse start date " + dates[0], ex);
-            }
-        }
-
-        if (!dates[1].trim().equals("_")) {
-            try {
-                endDate = TimeUtil.DateFromStr(dates[1]);
-            }
-            catch (Exception ex) {
-                log.error("Error parse end date " + dates[1], ex);
-            }
-        }
-
-        return Arrays.asList(startDate, endDate);
     }
 
 

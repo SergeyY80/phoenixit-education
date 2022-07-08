@@ -8,10 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import phoenixit.education.components.MailInfo;
-import phoenixit.education.exceptions.MailHandleException;
 import phoenixit.education.services.MailInfoService;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -27,8 +27,22 @@ public class MailInfoController {
     @PostMapping("/save_mails")
     public ResponseEntity<String> saveMails(@RequestBody List<MailInfo> mails) {
         try {
-            mailInfoService.saveMails(mails);
-            return new ResponseEntity<>(HttpStatus.OK);
+            List<Integer> ids = mailInfoService.saveMails(mails).stream().map(MailInfo::getId)
+                    .collect(Collectors.toList());
+            return new ResponseEntity<>(objectMapper.writeValueAsString(ids), HttpStatus.OK);
+        }
+        catch (Throwable e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @ResponseBody
+    @PostMapping("/update_mails")
+    public ResponseEntity<String> updateMails(@RequestBody List<MailInfo> mails) {
+        try {
+            List<Integer> ids = mailInfoService.updateMails(mails).stream().map(MailInfo::getId)
+                    .collect(Collectors.toList());
+            return new ResponseEntity<>(objectMapper.writeValueAsString(ids), HttpStatus.OK);
         }
         catch (Throwable e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -39,8 +53,9 @@ public class MailInfoController {
     @PostMapping("/delete_mails")
     public ResponseEntity<String> deleteMails(@RequestBody Filters filters) {
         try {
-            Integer i = mailInfoService.deleteByFilters(filters);
-            return new ResponseEntity<>(i.toString(), HttpStatus.OK);
+            List<Integer> ids = mailInfoService.deleteByFilters(filters).stream().map(MailInfo::getId)
+                    .collect(Collectors.toList());
+            return new ResponseEntity<>(objectMapper.writeValueAsString(ids), HttpStatus.OK);
         }
         catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -52,14 +67,12 @@ public class MailInfoController {
     public ResponseEntity<String> getMails(@RequestBody Filters filters) {
         try {
             List<MailInfo> mails = mailInfoService.findByFilters(filters);
-            String resp = objectMapper.writeValueAsString(mails);
-            return new ResponseEntity<>(resp, HttpStatus.OK);
+            return new ResponseEntity<>(objectMapper.writeValueAsString(mails), HttpStatus.OK);
         }
         catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
 
 }

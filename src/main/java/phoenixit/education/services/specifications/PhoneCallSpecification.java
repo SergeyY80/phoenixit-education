@@ -9,7 +9,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
-import java.time.ZonedDateTime;
+import java.util.Date;
 
 
 @AllArgsConstructor
@@ -22,15 +22,15 @@ public class PhoneCallSpecification implements Specification<PhoneCall> {
     public Predicate toPredicate(Root<PhoneCall> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
         switch (criteria.getOperation()) {
             case ">=":
-                if (root.get(criteria.getKey()).getJavaType() == ZonedDateTime.class) {
-                    return builder.greaterThanOrEqualTo(root.get(criteria.getKey()), (ZonedDateTime) criteria.getValue());
+                if (root.get(criteria.getKey()).getJavaType() == Date.class) {
+                    return builder.greaterThanOrEqualTo(root.get(criteria.getKey()), (Date) criteria.getValue());
                 }
 
                 return builder.greaterThanOrEqualTo(root.get(criteria.getKey()), criteria.getValue().toString());
 
             case "<=":
-                if (root.get(criteria.getKey()).getJavaType() == ZonedDateTime.class) {
-                    return builder.lessThanOrEqualTo(root.get(criteria.getKey()), (ZonedDateTime) criteria.getValue());
+                if (root.get(criteria.getKey()).getJavaType() == Date.class) {
+                    return builder.lessThanOrEqualTo(root.get(criteria.getKey()), (Date) criteria.getValue());
                 }
 
                 return builder.lessThanOrEqualTo(root.get(criteria.getKey()), criteria.getValue().toString());

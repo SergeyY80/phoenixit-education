@@ -4,8 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import phoenixit.education.components.PhoneCall;
-import phoenixit.education.controllers.Filters;
+import phoenixit.education.controllers.Filter;
 import phoenixit.education.services.specifications.PhoneCallSpecification;
 import phoenixit.education.repositories.PhoneCallRepository;
 import phoenixit.education.services.specifications.SearchCriteria;
@@ -22,10 +23,11 @@ public class PhoneCallInfoService {
 
     private final PhoneCallRepository phoneCallRepository;
 
-    public List<PhoneCall> findByFilters(Filters filters) {
-        var specifications = filters.getFilters().stream()
-                                    .map(x -> createSpecification(x.getName(), "=", x.getValue()))
-                                    .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public List<PhoneCall> findByFilters(List<Filter> filters) {
+        var specifications = filters.stream()
+                .map(x -> createSpecification(x.getName(), "=", x.getValue()))
+                .collect(Collectors.toList());
 
         Specification<PhoneCall> spec = Specification.where(null);
 
