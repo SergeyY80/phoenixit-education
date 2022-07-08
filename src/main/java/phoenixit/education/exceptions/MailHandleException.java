@@ -1,7 +1,6 @@
 package phoenixit.education.exceptions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import phoenixit.education.components.MailInfo;
 
 import java.util.List;
@@ -28,12 +27,5 @@ public class MailHandleException extends Throwable {
         return info;
     }
 
-    @AllArgsConstructor
-    private static class MailHandleExceptionInfo {
-
-        private final String message;
-        private final List<MailInfo> mailInfo;
-
-    }
 
 }
