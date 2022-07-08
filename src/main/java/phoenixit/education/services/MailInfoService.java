@@ -74,14 +74,14 @@ public class MailInfoService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
-    public List<MailInfo> deleteByFilters(Filters filters) {
+    public List<MailInfo> deleteByFilters(Filters filters) throws ParseException {
         List<MailInfo> mails = findByFilters(filters);
         mailInfoRepository.deleteAll(mails);
         return mails;
     }
 
     @Transactional(readOnly = true)
-    public List<MailInfo> findByFilters(Filters filters) {
+    public List<MailInfo> findByFilters(Filters filters) throws ParseException {
         Specification<MailInfo> spec = Specification.where(null);
 
         // фильтрация по полям звонков
@@ -109,28 +109,16 @@ public class MailInfoService {
                                       .findFirst().orElse(null);
 
             if (startDateFilter != null) {
-                try {
-                    Date startDate = TimeUtil.DateFromStr(startDateFilter.getValue());
-                    spec = spec.and(createSpecification(MailInfo.dateField, ">=", startDate));
-                }
-                catch (ParseException e) {
-                    log.error("Error parse start date: " + startDateFilter.getValue(), e);
-                    return new ArrayList<>();
-                }
+                Date startDate = TimeUtil.DateFromStr(startDateFilter.getValue());
+                spec = spec.and(createSpecification(MailInfo.dateField, ">=", startDate));
             }
 
             Filter endDateFilter = filters.getFilters().stream().filter(x -> endDateFieldName.equals(x.getName()))
                     .findFirst().orElse(null);
 
             if (endDateFilter != null) {
-                try {
-                    Date endDate = TimeUtil.DateFromStr(endDateFilter.getValue());
-                    spec = spec.and(createSpecification(MailInfo.dateField, "<=", endDate));
-                }
-                catch (ParseException e) {
-                    log.error("Error parse end date: " + endDateFilter.getValue(), e);
-                    return new ArrayList<>();
-                }
+                Date endDate = TimeUtil.DateFromStr(endDateFilter.getValue());
+                spec = spec.and(createSpecification(MailInfo.dateField, "<=", endDate));
             }
         }
 
